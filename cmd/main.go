@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"net"
 )
 
-func handleConnection(conn net.conn) {
+func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
@@ -16,7 +17,7 @@ func handleConnection(conn net.conn) {
 	fmt.Println("Received message ", message)
 }
 
-func startServer(string address) {
+func startServer(address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		fmt.Println("Error starting listener: ", err)
