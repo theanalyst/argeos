@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"os"
 )
 
@@ -10,14 +10,12 @@ type ServerConfig struct {
 	Address string `json:"host"`
 }
 
-
 type Config struct {
 	Server ServerConfig `json:"server"`
 }
 
-
 var defaultConfig Config = Config{
-	Server: ServerConfig {
+	Server: ServerConfig{
 		Address: ":9999",
 	},
 }
@@ -33,7 +31,7 @@ func Configure(jsonString []byte) Config {
 	err := json.Unmarshal([]byte(jsonString), &config)
 
 	if err != nil {
-		fmt.Println("Error parsing JSON config", err)
+		logger.Logger.Error("Parsing JSON config", "error", err)
 		return defaultConfig
 	}
 	overrideDefaults(&config)
@@ -43,7 +41,7 @@ func Configure(jsonString []byte) Config {
 func ConfigurefromFile(filename string) Config {
 	file, err := os.ReadFile(filename)
 	if err != nil {
-		fmt.Println("Error Reaading file - using defaults", err)
+		logger.Logger.Warn("Reading file - using defaults", "error", err)
 		return defaultConfig
 	}
 	return Configure(file)

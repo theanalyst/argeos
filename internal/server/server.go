@@ -1,8 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"net"
+
+	"gitlab.cern.ch/eos/argeos/internal/logger"
 )
 
 func handleConnection(conn net.Conn) {
@@ -10,27 +11,27 @@ func handleConnection(conn net.Conn) {
 	buf := make([]byte, 1024)
 	n, err := conn.Read(buf)
 	if err != nil {
-		fmt.Println("Error reading from connection: ", err)
+		logger.Logger.Error("Reading from connection ", "error", err)
 	}
 
 	message := string(buf[:n])
-	fmt.Println("Received message ", message)
+	logger.Logger.Info("Received", "message", message)
 }
 
 func StartServer(address string) {
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
-		fmt.Println("Error starting listener: ", err)
+		logger.Logger.Error("Starting listener failed", "error", err)
 		return
 	}
 
 	defer listener.Close()
-	fmt.Println("Starting argeos daemon on ", address)
+	logger.Logger.Info("Starting argeos daemon on ", "address", address)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error accepting connection: ", err)
+			logger.Logger.Error("Accepting connection ", "error", err)
 			continue
 		}
 		go handleConnection(conn)
