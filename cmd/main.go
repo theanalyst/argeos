@@ -19,5 +19,6 @@ func main() {
 
 	logger.Init(logfile)
 	config := config.ConfigurefromFile(configpath)
-	server.StartServer(config.Server.Address)
+	server := server.Server{config.Server}
+	server.Start()
 }
