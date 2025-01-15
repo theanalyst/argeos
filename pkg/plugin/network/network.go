@@ -66,7 +66,7 @@ func (np *NetworkPlugin) CommandHelp() map[string]string {
 
 func (np *NetworkPlugin) Execute(command string, args ...string) string {
 	switch command {
-	case "check network":
+	case "check_network":
 		output, err := exec.Command("ss", "-tunap").Output()
 		if err != nil {
 			logger.Logger.Error("Error running ss", "error", err)
