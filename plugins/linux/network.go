@@ -1,4 +1,4 @@
-package linux
+package network
 
 import (
 	"os/exec"
@@ -7,20 +7,18 @@ import (
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
 
-type LinuxPlugin struct {
-	path string
+type NetworkPlugin struct {
 }
 
 func New(path string) plugin.Plugin {
-	return &LinuxPlugin{path: path}
+	return &NetworkPlugin{path: path}
 }
 
-func (l *LinuxPlugin) Name() string {
+func (np *NetworkPlugin) Name() string {
 	return "Linux"
 }
 
-
-func (l *LinuxPlugin) HealthCheck() plugin.HealthStatus {
+func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
 	logger.Logger.Info("Running Network plugin")
 
 	output, err := exec.Command("ss", "-tunap").Output()
@@ -32,14 +30,14 @@ func (l *LinuxPlugin) HealthCheck() plugin.HealthStatus {
 	return plugin.HealthOK(output)
 }
 
-func (l *LinuxPlugin) CommandHelp() map[string]string {
+func (np *NetworkPlugin) CommandHelp() map[string]string {
 	m := make(map[string]string)
 	m["check network"] = "Check Network status"
 	return m
 }
 
-func (l *LinuxPlugin) Execute(command string, args ...string) string {
-	switch (command) {
+func (np *NetworkPlugin) Execute(command string, args ...string) string {
+	switch command {
 	case "check network":
 		output, err := exec.Command("ss", "-tunap").Output()
 		if err != nil {

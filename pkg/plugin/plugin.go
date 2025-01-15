@@ -9,7 +9,7 @@ const (
 )
 
 type HealthStatus struct {
-	State HealthState
+	State  HealthState
 	Detail string
 }
 
@@ -25,7 +25,6 @@ func HealthERROR(status string) HealthStatus {
 	return HealthStatus{State: StateERROR, Detail: status}
 }
 
-
 type Plugin interface {
 	Name() string // Name of the plugin
 	HealthCheck() HealthStatus
@@ -36,8 +35,8 @@ type Plugin interface {
 
 func (p Plugin) SupportedCommands() []string {
 	commands := make([]string, 0, len(p.CommandHelp()))
-        for command := range p.CommandHelp() {
-                commands = append(commands, command)
-        }
-        return commands
+	for command := range p.CommandHelp() {
+		commands = append(commands, command)
+	}
+	return commands
 }
