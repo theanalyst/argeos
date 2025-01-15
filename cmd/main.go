@@ -19,13 +19,12 @@ func main() {
 	flag.StringVar(&logfile, "logfile", "", "Path to log file")
 	flag.Parse()
 
-
 	pluginmgr := plugin.NewManager()
 	networkplugin := network.NewPlugin()
 	pluginmgr.Register(networkplugin)
 
 	logger.Init(logfile)
 	config := config.ConfigurefromFile(configpath)
-	server := server.Server{config.Server}
+	server := server.Server{Cfg: config.Server, PluginMgr: pluginmgr}
 	server.Start()
 }

@@ -1,20 +1,22 @@
 package network
 
 import (
-	"os/exec"
-
+	"bytes"
+	"fmt"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
+	"io"
+	"os/exec"
 )
 
 type NetworkPlugin struct {
-	name string
+	name        string
 	commandHelp map[string]string
 }
 
 func NewPlugin() plugin.Plugin {
 	return &NetworkPlugin{
-		name:"network",
+		name: "network",
 		commandHelp: map[string]string{
 			"check network": "Check Network Status",
 		},
@@ -28,13 +30,34 @@ func (np *NetworkPlugin) Name() string {
 func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
 	logger.Logger.Info("Running Network plugin")
 
-	output, err := exec.Command("ss", "-tunap").Output()
-
+	cmd := exec.Command("ss", "-tunap")
+	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Logger.Error("Error running ss", "error", err)
 		return plugin.HealthERROR(err.Error())
 	}
-	return plugin.HealthOK(string(output))
+
+	err = cmd.Start()
+	if err != nil {
+		logger.Logger.Error("Error starting ss command", "error", err)
+		return plugin.HealthERROR(err.Error())
+	}
+
+	out, err := io.ReadAll(outPipe)
+	if err != nil {
+		logger.Logger.Error("Error reading output from ss", "error", err)
+		return plugin.HealthERROR(err.Error())
+	}
+	var formattedOutput bytes.Buffer
+	_, err = fmt.Fprintf(&formattedOutput, "%s\n", string(bytes.TrimSpace(out)))
+
+	err = cmd.Wait()
+	if err != nil {
+		logger.Logger.Error("Error waiting for ss command", "error", err)
+		return plugin.HealthERROR(err.Error())
+	}
+
+	return plugin.HealthOK(formattedOutput.String())
 }
 
 func (np *NetworkPlugin) CommandHelp() map[string]string {

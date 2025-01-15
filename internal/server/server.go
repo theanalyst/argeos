@@ -2,13 +2,17 @@ package server
 
 import (
 	"bufio"
+	"encoding/json"
 	"gitlab.cern.ch/eos/argeos/internal/config"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"net"
+	"os"
 )
 
 type Server struct {
-	Cfg config.ServerConfig
+	Cfg       config.ServerConfig
+	PluginMgr *plugin.PluginManager
 }
 
 func (srv *Server) handleConnection(conn net.Conn) {
@@ -55,8 +59,17 @@ func (srv *Server) StartUnixServer() {
 		return
 	}
 
-	defer listener.Close()
-	logger.Logger.Info("Starting argeos Unix socket on ", socketPath)
+	defer func() {
+		if err := listener.Close(); err != nil {
+			logger.Logger.Error("Error closing socket", "error", err)
+		}
+
+		if err := os.Remove(socketPath); err != nil && !os.IsNotExist(err) {
+			logger.Logger.Error("Failed to remove socket", "error", err)
+		}
+	}()
+
+	logger.Logger.Info("Starting argeos Unix socket on ", "socketPath", socketPath)
 
 	for {
 
@@ -88,5 +101,9 @@ func (srv *Server) handleCommand(command string) string {
 }
 
 func (srv *Server) HealthCheck() string {
-	return "HEALTH_OK"
+	jsonBytes, err := json.Marshal(srv.PluginMgr.HealthCheck())
+	if err != nil {
+		logger.Logger.Error("Error json encoding", err)
+	}
+	return string(jsonBytes)
 }

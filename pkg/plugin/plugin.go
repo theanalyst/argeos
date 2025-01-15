@@ -9,8 +9,8 @@ const (
 )
 
 type HealthStatus struct {
-	State  HealthState  `json:"state"`
-	Detail string       `json:"detail"`
+	State  HealthState `json:"state"`
+	Detail string      `json:"detail"`
 }
 
 func HealthOK(status string) HealthStatus {
@@ -61,7 +61,7 @@ func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 		for _, cmd := range SupportedCommands(plugin) {
 			if cmd == command {
 				result += plugin.Execute(command, args...)
-				result +="\n"
+				result += "\n"
 			}
 		}
 	}
@@ -73,7 +73,7 @@ func (pm *PluginManager) HealthCheck() []HealthStatus {
 
 	var result []HealthStatus
 	for _, plugin := range pm.plugins {
-		result  = append(result, plugin.HealthCheck())
+		result = append(result, plugin.HealthCheck())
 	}
 	return result
 }
