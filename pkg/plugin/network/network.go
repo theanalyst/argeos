@@ -28,7 +28,7 @@ func (np *NetworkPlugin) Name() string {
 }
 
 func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
-	logger.Logger.Info("Running Network plugin")
+	logger.Logger.Debug("Running Network plugin")
 
 	cmd := exec.Command("ss", "-tunap")
 	outPipe, err := cmd.StdoutPipe()
