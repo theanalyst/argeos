@@ -2,12 +2,15 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"gitlab.cern.ch/eos/argeos/internal/config"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Server struct {
@@ -26,6 +29,24 @@ func (srv *Server) handleConnection(conn net.Conn) {
 		conn.Write([]byte(response + "\n"))
 	}
 
+}
+
+func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
+	defer conn.Close()
+
+	select {
+	case <-ctx.Done():
+		logger.Logger.Info("Stopping Connection Handler due to server shutdown")
+		return
+	default:
+		scanner := bufio.NewScanner(conn)
+
+		for scanner.Scan() {
+			command := scanner.Text()
+			response := srv.handleCommand(command)
+			conn.Write([]byte(response + "\n"))
+		}
+	}
 }
 
 func (srv *Server) StartTCPServer() {
@@ -69,18 +90,40 @@ func (srv *Server) StartUnixServer() {
 		}
 	}()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	shutdownChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-shutdownChan
+		logger.Logger.Info("Received Shutdown signal")
+		cancel()
+	}()
+
 	logger.Logger.Info("Starting argeos Unix socket on ", "socketPath", socketPath)
 
-	for {
+	go func() {
+		for {
 
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Logger.Error("Accepting connection", "error", err)
-			continue
+			conn, err := listener.Accept()
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					logger.Logger.Error("Accepting connection", "error", err)
+				}
+				continue
+			}
+			go srv.handleConnectionWithCtx(ctx, conn)
+
 		}
-		go srv.handleConnection(conn)
-	}
+	}()
 
+	<-ctx.Done()
+	logger.Logger.Info("Unix Server shutdown complete!")
 }
 
 func (srv *Server) Start() {
