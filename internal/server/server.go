@@ -61,15 +61,39 @@ func (srv *Server) StartTCPServer() {
 	defer listener.Close()
 	logger.Logger.Info("Starting argeos TCP daemon on ", "address", address)
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Logger.Error("Accepting connection ", "error", err)
-			continue
-		}
-		go srv.handleConnection(conn)
-	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
+	shutdownChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-shutdownChan
+		logger.Logger.Info("Received Shutdown signal, stopping TCP server")
+		cancel()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			logger.Logger.Warn("TCP Server shutting down, no longer accepting connection")
+			return
+		default:
+			conn, err := listener.Accept()
+			if err != nil {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+					logger.Logger.Error("Accepting connection ", "error", err)
+					continue
+				}
+
+			}
+			go srv.handleConnectionWithCtx(ctx, conn)
+
+		}
+	}
 }
 
 func (srv *Server) StartUnixServer() {
@@ -99,7 +123,7 @@ func (srv *Server) StartUnixServer() {
 
 	go func() {
 		<-shutdownChan
-		logger.Logger.Info("Received Shutdown signal")
+		logger.Logger.Info("Received Shutdown signal, stopping UDP server")
 		cancel()
 	}()
 
