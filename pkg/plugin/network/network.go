@@ -8,10 +8,17 @@ import (
 )
 
 type NetworkPlugin struct {
+	name string
+	commandHelp map[string]string
 }
 
-func New(path string) plugin.Plugin {
-	return &NetworkPlugin{path: path}
+func NewPlugin() plugin.Plugin {
+	return &NetworkPlugin{
+		name:"network",
+		commandHelp: map[string]string{
+			"check network": "Check Network Status",
+		},
+	}
 }
 
 func (np *NetworkPlugin) Name() string {
@@ -25,15 +32,13 @@ func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
 
 	if err != nil {
 		logger.Logger.Error("Error running ss", "error", err)
-		return plugin.HealthERROR(err)
+		return plugin.HealthERROR(err.Error())
 	}
-	return plugin.HealthOK(output)
+	return plugin.HealthOK(string(output))
 }
 
 func (np *NetworkPlugin) CommandHelp() map[string]string {
-	m := make(map[string]string)
-	m["check network"] = "Check Network status"
-	return m
+	return np.commandHelp
 }
 
 func (np *NetworkPlugin) Execute(command string, args ...string) string {
@@ -44,7 +49,7 @@ func (np *NetworkPlugin) Execute(command string, args ...string) string {
 			logger.Logger.Error("Error running ss", "error", err)
 
 		}
-		return output
+		return string(output)
 	default:
 		return "Not Implemented!"
 	}

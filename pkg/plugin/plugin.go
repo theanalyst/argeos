@@ -9,8 +9,8 @@ const (
 )
 
 type HealthStatus struct {
-	State  HealthState
-	Detail string
+	State  HealthState  `json:"state"`
+	Detail string       `json:"detail"`
 }
 
 func HealthOK(status string) HealthStatus {
@@ -30,13 +30,50 @@ type Plugin interface {
 	HealthCheck() HealthStatus
 	CommandHelp() map[string]string
 	Execute(command string, args ...string) string
-	SupportedCommands() []string
 }
 
-func (p Plugin) SupportedCommands() []string {
+func SupportedCommands(p Plugin) []string {
 	commands := make([]string, 0, len(p.CommandHelp()))
 	for command := range p.CommandHelp() {
 		commands = append(commands, command)
 	}
 	return commands
+}
+
+type PluginManager struct {
+	plugins []Plugin
+}
+
+func NewManager() *PluginManager {
+	return &PluginManager{}
+}
+
+func (pm *PluginManager) Register(plugin Plugin) {
+	pm.plugins = append(pm.plugins, plugin)
+}
+
+func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
+
+	var result string
+
+	for _, plugin := range pm.plugins {
+
+		for _, cmd := range SupportedCommands(plugin) {
+			if cmd == command {
+				result += plugin.Execute(command, args...)
+				result +="\n"
+			}
+		}
+	}
+
+	return result
+}
+
+func (pm *PluginManager) HealthCheck() []HealthStatus {
+
+	var result []HealthStatus
+	for _, plugin := range pm.plugins {
+		result  = append(result, plugin.HealthCheck())
+	}
+	return result
 }
