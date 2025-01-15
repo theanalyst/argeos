@@ -1,7 +1,6 @@
 package linux
 
 import (
-	"os"
 	"os/exec"
 
 	"gitlab.cern.ch/eos/argeos/internal/logger"
@@ -20,22 +19,35 @@ func (l *LinuxPlugin) Name() string {
 	return "Linux"
 }
 
-func (l *LinuxPlugin) Run() error {
-	logger.Logger.Info("Running Linux plugin")
+
+func (l *LinuxPlugin) HealthCheck() plugin.HealthStatus {
+	logger.Logger.Info("Running Network plugin")
 
 	output, err := exec.Command("ss", "-tunap").Output()
 
 	if err != nil {
 		logger.Logger.Error("Error running ss", "error", err)
-		return err
+		return plugin.HealthERROR(err)
 	}
+	return plugin.HealthOK(output)
+}
 
-	// save output to file
-	filename := l.path + "/ss_output.txt"
-	err = os.WriteFile(filename, output, 0644)
-	if err != nil {
-		logger.Logger.Error("Error writing to file", "error", err)
-		return err
+func (l *LinuxPlugin) CommandHelp() map[string]string {
+	m := make(map[string]string)
+	m["check network"] = "Check Network status"
+	return m
+}
+
+func (l *LinuxPlugin) Execute(command string, args ...string) string {
+	switch (command) {
+	case "check network":
+		output, err := exec.Command("ss", "-tunap").Output()
+		if err != nil {
+			logger.Logger.Error("Error running ss", "error", err)
+
+		}
+		return output
+	default:
+		return "Not Implemented!"
 	}
-	return nil
 }
