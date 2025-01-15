@@ -1,12 +1,11 @@
 package server
 
 import (
-	"net"
 	"bufio"
-	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/internal/config"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
+	"net"
 )
-
 
 type Server struct {
 	Cfg config.ServerConfig
@@ -47,7 +46,6 @@ func (srv *Server) StartTCPServer() {
 
 }
 
-
 func (srv *Server) StartUnixServer() {
 	var socketPath = srv.Cfg.AdminSocket
 	listener, err := net.Listen("unix", socketPath)
@@ -70,8 +68,6 @@ func (srv *Server) StartUnixServer() {
 		go srv.handleConnection(conn)
 	}
 
-
-
 }
 
 func (srv *Server) Start() {
@@ -79,9 +75,8 @@ func (srv *Server) Start() {
 	srv.StartTCPServer()
 }
 
-
 func (srv *Server) handleCommand(command string) string {
-	switch(command) {
+	switch command {
 	case "healthcheck":
 		return srv.HealthCheck()
 	case "help":
@@ -91,7 +86,6 @@ func (srv *Server) handleCommand(command string) string {
 	}
 
 }
-
 
 func (srv *Server) HealthCheck() string {
 	return "HEALTH_OK"

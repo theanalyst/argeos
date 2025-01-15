@@ -7,7 +7,7 @@ import (
 )
 
 type ServerConfig struct {
-	Address string `json:"host"`
+	Address     string `json:"host"`
 	AdminSocket string `json:"admin_socket"`
 }
 
@@ -17,7 +17,7 @@ type Config struct {
 
 var defaultConfig Config = Config{
 	Server: ServerConfig{
-		Address: ":9999",
+		Address:     ":9999",
 		AdminSocket: "/var/run/argeos.asok",
 	},
 }
