@@ -1,7 +1,9 @@
 package probe
 
 import (
+	"os"
 	"os/exec"
+	"strings"
 
 	"gitlab.cern.ch/eos/argeos/config"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
@@ -33,8 +35,9 @@ func (p *ProbePlugin) HealthCheck() plugin.HealthStatus {
 	logger.Logger.Debug("Running Probe plugin")
 
 	store, _ := probe.NewStore(p.cfg.Nats.Servers)
+	hostname, _ := os.Hostname() // can be any MGM hostname like: eosalice-ns-ip700, eosatlas-ns-ip700
 
-	return p.GetAutomaticUpdates(store, "eosp2")
+	return p.GetManualUpdates(store, hostname)
 }
 
 func (p *ProbePlugin) CommandHelp() map[string]string {
@@ -62,16 +65,16 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) p
 	}
 
 	for target := range lis.Updates() {
-		if target.Target == hostname {
+		if strings.Contains(hostname, target.Target) {
 			info, err := store.GetProbeInfo(hostname)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
 			}
 			if info.Available {
-				logger.Logger.Info(hostname + " is working")
+				logger.Logger.Info(target.Target + " is working")
 			} else {
-				logger.Logger.Warn(hostname + " is not working")
-				cmd := exec.Command("ping", "-c", "4", hostname)
+				logger.Logger.Warn(target.Target + " is not working")
+				cmd := exec.Command("ping", "-c", "4", target.Target)
 				// Get the command output
 				output, err := cmd.CombinedOutput()
 				if err != nil {
@@ -92,16 +95,16 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 	}
 
 	for _, target := range targets {
-		if target == hostname {
-			info, err := store.GetProbeInfo(hostname)
+		if strings.Contains(hostname, target) {
+			info, err := store.GetProbeInfo(target)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
 			}
 			if info.Available {
-				logger.Logger.Info(hostname + " is working")
+				logger.Logger.Info(target + " is working")
 			} else {
-				logger.Logger.Warn(hostname + " is not working")
-				cmd := exec.Command("ping", "-c", "4", hostname)
+				logger.Logger.Warn(target + " is not working")
+				cmd := exec.Command("ping", "-c", "4", target)
 				// Get the command output
 				output, err := cmd.CombinedOutput()
 				if err != nil {
