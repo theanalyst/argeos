@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 
-	"gitlab.cern.ch/eos/argeos/internal/config"
+	"gitlab.cern.ch/eos/argeos/config"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/internal/server"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin/network"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin/probe"
 )
 
 func main() {
@@ -19,12 +20,16 @@ func main() {
 	flag.StringVar(&logfile, "logfile", "", "Path to log file")
 	flag.Parse()
 
-	pluginmgr := plugin.NewManager()
-	networkplugin := network.NewPlugin()
-	pluginmgr.Register(networkplugin)
-
 	logger.Init(logfile)
 	config := config.ConfigurefromFile(configpath)
+
+	pluginmgr := plugin.NewManager()
+	networkplugin := network.NewPlugin(config)
+	pluginmgr.Register(networkplugin)
+
+	probeplugin := probe.NewPlugin(config)
+	pluginmgr.Register(probeplugin)
+
 	server := server.Server{Cfg: config.Server, PluginMgr: pluginmgr}
 	server.Start()
 }

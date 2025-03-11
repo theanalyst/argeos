@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"gitlab.cern.ch/eos/argeos/internal/config"
-	"gitlab.cern.ch/eos/argeos/internal/logger"
-	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"gitlab.cern.ch/eos/argeos/config"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
 
 type Server struct {

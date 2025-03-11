@@ -25,3 +25,6 @@ go.work.sum
 .env
 # emacs specific undo files
 *.~undo-tree~
+
+argeos
+*.test

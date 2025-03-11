@@ -3,23 +3,27 @@ package network
 import (
 	"bytes"
 	"fmt"
-	"gitlab.cern.ch/eos/argeos/internal/logger"
-	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"io"
 	"os/exec"
+
+	"gitlab.cern.ch/eos/argeos/config"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
 
 type NetworkPlugin struct {
 	name        string
 	commandHelp map[string]string
+	cfg         config.Config
 }
 
-func NewPlugin() plugin.Plugin {
+func NewPlugin(config config.Config) plugin.Plugin {
 	return &NetworkPlugin{
 		name: "network",
 		commandHelp: map[string]string{
 			"check network": "Check Network Status",
 		},
+		cfg: config,
 	}
 }
 

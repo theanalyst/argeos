@@ -2,17 +2,23 @@ package config
 
 import (
 	"encoding/json"
-	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"os"
+
+	list "gitlab.cern.ch/eos/argeos"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
 )
 
 type ServerConfig struct {
 	Address     string `json:"host"`
 	AdminSocket string `json:"admin_socket"`
 }
+type NatsConfig struct {
+	Servers list.StringList `json:"servers"`
+}
 
 type Config struct {
 	Server ServerConfig `json:"server"`
+	Nats   NatsConfig   `json:"nats"`
 }
 
 var defaultConfig Config = Config{
