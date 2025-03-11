@@ -1,5 +1,9 @@
 package plugin
 
+import (
+	"encoding/json"
+)
+
 type HealthState int
 
 const (
@@ -67,6 +71,18 @@ func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 	}
 
 	return result
+}
+
+func (pm *PluginManager) SupportedCommands() string {
+	commands := make([]string, 0)
+	for _, plugin := range pm.plugins {
+		commands = append(commands, SupportedCommands(plugin)...)
+	}
+	bytes, err := json.Marshal(commands)
+	if err != nil {
+		return "Error encoding supported commands"
+	}
+	return string(bytes)
 }
 
 func (pm *PluginManager) HealthCheck() []HealthStatus {

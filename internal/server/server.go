@@ -4,13 +4,14 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"gitlab.cern.ch/eos/argeos/internal/config"
-	"gitlab.cern.ch/eos/argeos/internal/logger"
-	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"gitlab.cern.ch/eos/argeos/internal/config"
+	"gitlab.cern.ch/eos/argeos/internal/logger"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
 
 type Server struct {
@@ -160,7 +161,7 @@ func (srv *Server) handleCommand(command string) string {
 	case "healthcheck":
 		return srv.HealthCheck()
 	case "help":
-		fallthrough
+		return srv.PluginMgr.SupportedCommands()
 	default:
 		return "Unknown command"
 	}
@@ -170,7 +171,7 @@ func (srv *Server) handleCommand(command string) string {
 func (srv *Server) HealthCheck() string {
 	jsonBytes, err := json.Marshal(srv.PluginMgr.HealthCheck())
 	if err != nil {
-		logger.Logger.Error("Error json encoding", err)
+		logger.Logger.Error("Error json encoding", "err", err)
 	}
 	return string(jsonBytes)
 }
