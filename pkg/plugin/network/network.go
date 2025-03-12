@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	"gitlab.cern.ch/eos/argeos/internal/logger"
@@ -19,7 +20,8 @@ func NewPlugin() plugin.Plugin {
 	return &NetworkPlugin{
 		name: "network",
 		commandHelp: map[string]string{
-			"check network": "Check Network Status",
+			"check_network":   "Check Network Status",
+			"diagnostic_dump": "Dump network status to a directory",
 		},
 	}
 }
@@ -77,15 +79,35 @@ func (np *NetworkPlugin) CommandHelp() map[string]string {
 	return np.commandHelp
 }
 
-func (np *NetworkPlugin) Execute(command string, args ...string) string {
+func (np *NetworkPlugin) Execute(command string, args ...string) (string, error) {
 	switch command {
 	case "check_network":
 		output, err := np.run_ss("")
 		if err != nil {
-			return fmt.Sprintf("Error running ss: %s", err)
+			return "", err
 		}
-		return string(output)
+		return string(output), nil
+	case "diagnostic_dump":
+		if len(args) < 1 {
+			return "", fmt.Errorf("no diagnostic directory provided")
+		}
+		network_dir := fmt.Sprintf("%s/network", args[0])
+		err := os.MkdirAll(network_dir, 0755)
+		if err != nil {
+			return "", err
+		}
+
+		output, err := np.run_ss("")
+		if err != nil {
+			return "", err
+		}
+
+		err = os.WriteFile(fmt.Sprintf("%s/ss.txt", network_dir), output, 0644)
+		if err != nil {
+			return "", err
+		}
+		return "OK", nil
 	default:
-		return "Not Implemented!"
+		return "", fmt.Errorf("command not implemented")
 	}
 }

@@ -2,6 +2,11 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+
+	"gitlab.cern.ch/eos/argeos/internal/logger"
 )
 
 type HealthState int
@@ -33,7 +38,7 @@ type Plugin interface {
 	Name() string // Name of the plugin
 	HealthCheck() HealthStatus
 	CommandHelp() map[string]string
-	Execute(command string, args ...string) string
+	Execute(command string, args ...string) (string, error)
 }
 
 func SupportedCommands(p Plugin) []string {
@@ -64,7 +69,12 @@ func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 
 		for _, cmd := range SupportedCommands(plugin) {
 			if cmd == command {
-				result += plugin.Execute(command, args...)
+				plugin_result, err := plugin.Execute(command, args...)
+				if err != nil {
+					logger.Logger.Error("Error executing command", "plugin", plugin.Name(), "command", command, "error", err)
+					continue
+				}
+				result += plugin_result
 				result += "\n"
 			}
 		}
@@ -92,4 +102,15 @@ func (pm *PluginManager) HealthCheck() []HealthStatus {
 		result = append(result, plugin.HealthCheck())
 	}
 	return result
+}
+
+func (pm *PluginManager) DiagnosticDump() string {
+	// TODO: make this configurable
+	dump_base_dir := "/tmp/eos-diagnostics"
+	dump_dir_name := fmt.Sprintf("%s/dump-%s", dump_base_dir, time.Now().Format("20060102T150405"))
+	err := os.MkdirAll(dump_dir_name, 0755)
+	if err != nil {
+		logger.Logger.Error("Error creating dump directory", "error", err)
+	}
+	return pm.ExecuteCommand("diagnostic_dump", dump_dir_name)
 }

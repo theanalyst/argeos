@@ -162,6 +162,8 @@ func (srv *Server) handleCommand(command string) string {
 		return srv.HealthCheck()
 	case "help":
 		return srv.PluginMgr.SupportedCommands()
+	case "diagnostic_dump":
+		return srv.PluginMgr.DiagnosticDump()
 	default:
 		return "Unknown command"
 	}
