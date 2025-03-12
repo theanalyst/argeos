@@ -46,6 +46,10 @@ func (p *ProbePlugin) CommandHelp() map[string]string {
 }
 
 func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+	if store == nil {
+		return plugin.HealthERROR("No Probe store")
+	}
+
 	lis, err := store.Listener(probe.WithName("argeos"))
 	if err != nil {
 		return plugin.HealthERROR(err.Error())
@@ -76,6 +80,10 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) p
 }
 
 func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+	if store == nil {
+		return plugin.HealthERROR("No Probe store")
+	}
+
 	targets, err := store.ListTargets()
 	if err != nil {
 		return plugin.HealthERROR(err.Error())
