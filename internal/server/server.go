@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"gitlab.cern.ch/eos/argeos/config"
@@ -17,19 +18,6 @@ import (
 type Server struct {
 	Cfg       config.ServerConfig
 	PluginMgr *plugin.PluginManager
-}
-
-func (srv *Server) handleConnection(conn net.Conn) {
-	defer conn.Close()
-
-	scanner := bufio.NewScanner(conn)
-
-	for scanner.Scan() {
-		command := scanner.Text()
-		response := srv.handleCommand(command)
-		conn.Write([]byte(response + "\n"))
-	}
-
 }
 
 func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
@@ -43,8 +31,13 @@ func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
 		scanner := bufio.NewScanner(conn)
 
 		for scanner.Scan() {
-			command := scanner.Text()
-			response := srv.handleCommand(command)
+			cli := scanner.Text()
+			parts := strings.Fields(cli)
+			if len(parts) == 0 {
+				continue
+			}
+
+			response := srv.handleCommand(parts[0], parts[1:]...)
 			conn.Write([]byte(response + "\n"))
 		}
 	}
@@ -156,7 +149,7 @@ func (srv *Server) Start() {
 	srv.StartTCPServer()
 }
 
-func (srv *Server) handleCommand(command string) string {
+func (srv *Server) handleCommand(command string, args ...string) string {
 	switch command {
 	case "healthcheck":
 		return srv.HealthCheck()
@@ -165,7 +158,7 @@ func (srv *Server) handleCommand(command string) string {
 	case "diagnostic_dump":
 		return srv.PluginMgr.DiagnosticDump()
 	default:
-		return "Unknown command"
+		return srv.PluginMgr.ExecuteCommand(command, args...)
 	}
 
 }

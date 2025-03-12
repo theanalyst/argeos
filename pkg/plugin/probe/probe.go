@@ -22,7 +22,7 @@ func NewPlugin(config config.Config) plugin.Plugin {
 	return &ProbePlugin{
 		name: "probe",
 		commandHelp: map[string]string{
-			"check probe": "Check Probe Status",
+			"check_probe": "Check Probe Status",
 		},
 		cfg: config,
 	}
