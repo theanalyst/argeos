@@ -12,13 +12,15 @@ type ServerConfig struct {
 	Address     string `json:"host"`
 	AdminSocket string `json:"admin_socket"`
 }
+
 type NatsConfig struct {
 	Servers list.StringList `json:"servers"`
 }
 
 type Config struct {
-	Server ServerConfig `json:"server"`
-	Nats   NatsConfig   `json:"nats"`
+	Server  ServerConfig              `json:"server"`
+	Nats    NatsConfig                `json:"nats"`
+	Plugins map[string]map[string]any `json:"plugins"`
 }
 
 var defaultConfig Config = Config{
