@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"os"
 
-	list "gitlab.cern.ch/eos/argeos"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
+	list "gitlab.cern.ch/eos/argeos/internal/utils"
 )
 
 type ServerConfig struct {
