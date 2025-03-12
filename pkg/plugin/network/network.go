@@ -31,37 +31,49 @@ func (np *NetworkPlugin) Name() string {
 	return "Linux"
 }
 
-func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
-	logger.Logger.Debug("Running Network plugin")
+func (np *NetworkPlugin) run_ss(args string) ([]byte, error) {
+	if args == "" {
+		args = "-tunap"
+	}
 
-	cmd := exec.Command("ss", "-tunap")
+	logger.Logger.Debug("Running ss with args", "args", args)
+	cmd := exec.Command("ss", args)
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		logger.Logger.Error("Error running ss", "error", err)
-		return plugin.HealthERROR(err.Error())
+		return nil, err
 	}
 
 	err = cmd.Start()
 	if err != nil {
 		logger.Logger.Error("Error starting ss command", "error", err)
-		return plugin.HealthERROR(err.Error())
+		return nil, err
 	}
 
 	out, err := io.ReadAll(outPipe)
 	if err != nil {
 		logger.Logger.Error("Error reading output from ss", "error", err)
-		return plugin.HealthERROR(err.Error())
+		return nil, err
 	}
-	var formattedOutput bytes.Buffer
-	_, err = fmt.Fprintf(&formattedOutput, "%s\n", string(bytes.TrimSpace(out)))
 
 	err = cmd.Wait()
 	if err != nil {
 		logger.Logger.Error("Error waiting for ss command", "error", err)
-		return plugin.HealthERROR(err.Error())
+		return nil, err
 	}
 
-	return plugin.HealthOK(formattedOutput.String())
+	return bytes.TrimSpace(out), nil
+
+}
+
+func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
+	logger.Logger.Debug("Running Network plugin")
+
+	_, err := np.run_ss("")
+	if err != nil {
+		return plugin.HealthERROR(err.Error())
+	}
+	return plugin.HealthOK("OK")
 }
 
 func (np *NetworkPlugin) CommandHelp() map[string]string {
@@ -71,10 +83,9 @@ func (np *NetworkPlugin) CommandHelp() map[string]string {
 func (np *NetworkPlugin) Execute(command string, args ...string) string {
 	switch command {
 	case "check_network":
-		output, err := exec.Command("ss", "-tunap").Output()
+		output, err := np.run_ss("")
 		if err != nil {
-			logger.Logger.Error("Error running ss", "error", err)
-
+			return fmt.Sprintf("Error running ss: %s", err)
 		}
 		return string(output)
 	default:
