@@ -1,6 +1,7 @@
 package probe
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,20 +43,6 @@ func (p *ProbePlugin) HealthCheck() plugin.HealthStatus {
 
 func (p *ProbePlugin) CommandHelp() map[string]string {
 	return p.commandHelp
-}
-
-func (p *ProbePlugin) Execute(command string, args ...string) string {
-	switch command {
-	case "check_probe":
-		output, err := exec.Command("ss", "-tunap").Output()
-		if err != nil {
-			logger.Logger.Error("Error running ss", "error", err)
-
-		}
-		return string(output)
-	default:
-		return "Not Implemented!"
-	}
 }
 
 func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
@@ -116,4 +103,13 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 		}
 	}
 	return plugin.HealthOK("OK")
+}
+
+func (p *ProbePlugin) Execute(command string, args ...string) (string, error) {
+	switch command {
+	case "check_probe":
+		return p.HealthCheck().Detail, nil
+	default:
+		return "", fmt.Errorf("command not implemented")
+	}
 }
