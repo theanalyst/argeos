@@ -30,7 +30,7 @@ type BashPlugin struct {
 func extractConfig(cfg config.Config) PluginConfig {
 	pluginConfig, exists := cfg.Plugins["bash"]
 	if !exists {
-		return PluginConfig{scriptDir: DefaultScriptDir}
+		return PluginConfig{ScriptDir: DefaultScriptDir}
 	}
 	cfgBytes, err := json.Marshal(pluginConfig)
 	if err != nil {
@@ -46,12 +46,13 @@ func extractConfig(cfg config.Config) PluginConfig {
 	return config
 }
 
-func NewBashPlugin(cfg config.Config) plugin.Plugin {
+func NewPlugin(cfg config.Config) plugin.Plugin {
 	bash_cfg := extractConfig(cfg)
 	return &BashPlugin{
 		name: "bash",
 		commandHelp: map[string]string{
-			"run_script": "Run a bash script",
+			"run_script":      "Run a bash script",
+			"diagnostic_dump": "Run all diagnostic scripts",
 		},
 		config: bash_cfg,
 	}
@@ -74,7 +75,19 @@ func (bp *BashPlugin) getScripts() ([]string, error) {
 
 	scripts := make([]string, 0, len(files))
 	for _, file := range files {
-		if file.IsDir() || file.Type().Perm()&0111 == 0 {
+
+		if file.IsDir() {
+			logger.Logger.Debug("Skipping directory", "directory", file.Name())
+			continue
+		}
+
+		fileinfo, err := file.Info()
+		if err != nil {
+			logger.Logger.Error("Error getting file info", "file", file.Name(), "error", err)
+			continue
+		}
+		if fileinfo.Mode()&0111 == 0 {
+			logger.Logger.Info("Skipping non-executable file", "file", file.Name(), "permissions", fileinfo.Mode().String())
 			continue
 		}
 		scripts = append(scripts, file.Name())
@@ -91,8 +104,9 @@ func (bp *BashPlugin) runScripts(script_env []string) (string, error) {
 
 	var output strings.Builder
 
+	logger.Logger.Debug("Running scripts", "scripts", files)
 	for _, file := range files {
-		cmd := exec.Command(filepath.Join(bp.config.scriptDir, file))
+		cmd := exec.Command(filepath.Join(bp.config.ScriptDir, file))
 		cmd.Env = append(os.Environ(), script_env...)
 		out, err := cmd.CombinedOutput()
 

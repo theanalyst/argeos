@@ -7,6 +7,7 @@ import (
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/internal/server"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
+	"gitlab.cern.ch/eos/argeos/pkg/plugin/bash"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin/network"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin/probe"
 )
@@ -29,6 +30,9 @@ func main() {
 
 	probeplugin := probe.NewPlugin(config)
 	pluginmgr.Register(probeplugin)
+
+	bashplugin := bash.NewPlugin(config)
+	pluginmgr.Register(bashplugin)
 
 	server := server.Server{Cfg: config.Server, PluginMgr: pluginmgr}
 	server.Start()
