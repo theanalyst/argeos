@@ -173,7 +173,7 @@ func (srv *Server) handleCommand(command string, args ...string) string {
 	case "help":
 		return srv.PluginMgr.SupportedCommands()
 	case "diagnostic_dump":
-		return srv.PluginMgr.DiagnosticDump()
+		return srv.PluginMgr.DiagnosticDump(srv.Cfg.DiagnosticDir)
 	default:
 		return srv.PluginMgr.ExecuteCommand(command, args...)
 	}
