@@ -1,0 +1,25 @@
+image: golang:1.22
+
+stages:
+  - build
+  - release
+
+variables:
+  GOOS: linux
+  CGO_ENABLED: 0
+
+build_binaries:
+  stage: build
+  script:
+    - make
+  artifacts:
+    paths:
+      - argeos
+
+release:
+  stage: release
+  script:
+    - |
+      curl --header "Content-Type: application/octet-stream"  --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./cephs3usage_amd64 "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG/packages/amd64/argeos_amd64"
+  only:
+    - tags
