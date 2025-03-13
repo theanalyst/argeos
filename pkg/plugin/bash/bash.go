@@ -121,6 +121,8 @@ func (bp *BashPlugin) runScripts(script_env []string) (string, error) {
 
 func (bp *BashPlugin) Execute(command string, args ...string) (string, error) {
 	switch command {
+	case "run_script":
+		fallthrough
 	case "diagnostic_dump":
 		if len(args) < 1 {
 			return "", fmt.Errorf("no diagnostic directory provided")
