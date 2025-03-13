@@ -1,1 +1,4 @@
-{"server":{"host": ":9999", "admin_socket": "/tmp/test_argeos.asok"},"plugins":{"bash":{"script_dir":"/tmp/test_scripts"}}}
+{
+ "server":{"host": ":9999", "admin_socket": "/tmp/test_argeos.asok", "diagnostic_dir":"/tmp/eos-diagnostics"},
+ "plugins":{"bash":{"script_dir":"/tmp/test_scripts"}}
+}
