@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"gitlab.cern.ch/eos/argeos/config"
@@ -43,7 +44,8 @@ func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (srv *Server) StartTCPServer() {
+func (srv *Server) StartTCPServer(wg *sync.WaitGroup) {
+	defer wg.Done()
 	address := srv.Cfg.Address
 	listener, err := net.Listen("tcp", address)
 	if err != nil {
@@ -52,7 +54,6 @@ func (srv *Server) StartTCPServer() {
 	}
 
 	defer listener.Close()
-	logger.Logger.Info("Starting argeos TCP daemon on ", "address", address)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -66,30 +67,38 @@ func (srv *Server) StartTCPServer() {
 		cancel()
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Logger.Warn("TCP Server shutting down, no longer accepting connection")
-			return
-		default:
-			conn, err := listener.Accept()
-			if err != nil {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					logger.Logger.Error("Accepting connection ", "error", err)
-					continue
+	logger.Logger.Info("Starting argeos TCP daemon on ", "address", address)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Logger.Warn("TCP Server shutting down, no longer accepting connection")
+				return
+			default:
+				conn, err := listener.Accept()
+				if err != nil {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+						logger.Logger.Error("Accepting connection ", "error", err)
+						continue
+					}
+
 				}
+				go srv.handleConnectionWithCtx(ctx, conn)
 
 			}
-			go srv.handleConnectionWithCtx(ctx, conn)
-
 		}
-	}
+	}()
+
+	<-ctx.Done()
+	logger.Logger.Info("TCP Server shutdown complete!")
 }
 
-func (srv *Server) StartUnixServer() {
+func (srv *Server) StartUnixServer(wg *sync.WaitGroup) {
+	defer wg.Done()
 	var socketPath = srv.Cfg.AdminSocket
 	listener, err := net.Listen("unix", socketPath)
 
@@ -145,8 +154,16 @@ func (srv *Server) StartUnixServer() {
 }
 
 func (srv *Server) Start() {
-	srv.StartUnixServer()
-	srv.StartTCPServer()
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go srv.StartUnixServer(&wg)
+
+	wg.Add(1)
+	go srv.StartTCPServer(&wg)
+
+	wg.Wait()
+	logger.Logger.Info("Server shutdown complete!")
 }
 
 func (srv *Server) handleCommand(command string, args ...string) string {
@@ -156,7 +173,7 @@ func (srv *Server) handleCommand(command string, args ...string) string {
 	case "help":
 		return srv.PluginMgr.SupportedCommands()
 	case "diagnostic_dump":
-		return srv.PluginMgr.DiagnosticDump()
+		return srv.PluginMgr.DiagnosticDump(srv.Cfg.DiagnosticDir)
 	default:
 		return srv.PluginMgr.ExecuteCommand(command, args...)
 	}

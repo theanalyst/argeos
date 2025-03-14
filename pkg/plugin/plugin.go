@@ -17,21 +17,38 @@ const (
 	StateERROR
 )
 
-type HealthStatus struct {
-	State  HealthState `json:"state"`
-	Detail string      `json:"detail"`
+func HealthStateString(state HealthState) string {
+	switch state {
+	case StateOK:
+		return "OK"
+	case StateWARN:
+		return "WARN"
+	case StateERROR:
+		return "ERROR"
+	default:
+		return "UNKNOWN"
+	}
 }
 
+type HealthStatus struct {
+	State       HealthState `json:"state"`
+	StateString string      `json:"state_string"`
+	Name        string      `json:"plugin_name"`
+	Detail      string      `json:"detail"`
+}
+
+// TODO: Add a helper struct that carries the plugin name
+// and make these functions easier
 func HealthOK(status string) HealthStatus {
-	return HealthStatus{State: StateOK, Detail: status}
+	return HealthStatus{State: StateOK, StateString: HealthStateString(StateOK), Detail: status}
 }
 
 func HealthWARN(status string) HealthStatus {
-	return HealthStatus{State: StateWARN, Detail: status}
+	return HealthStatus{State: StateWARN, StateString: HealthStateString(StateWARN), Detail: status}
 }
 
 func HealthERROR(status string) HealthStatus {
-	return HealthStatus{State: StateERROR, Detail: status}
+	return HealthStatus{State: StateERROR, StateString: HealthStateString(StateERROR), Detail: status}
 }
 
 type Plugin interface {
@@ -79,7 +96,9 @@ func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 			}
 		}
 	}
-
+	if result == "" {
+		return fmt.Sprintf("Command %s not supported", command)
+	}
 	return result
 }
 
@@ -98,16 +117,19 @@ func (pm *PluginManager) SupportedCommands() string {
 func (pm *PluginManager) HealthCheck() []HealthStatus {
 
 	var result []HealthStatus
+	logger.Logger.Info("Running healthcheck")
 	for _, plugin := range pm.plugins {
-		result = append(result, plugin.HealthCheck())
+		plugin_health := plugin.HealthCheck()
+		plugin_health.Name = plugin.Name()
+		result = append(result, plugin_health)
+		logger.Logger.Debug("Healthcheck done for ", "plugin", plugin_health.Name, "state", plugin_health.StateString)
 	}
 	return result
 }
 
-func (pm *PluginManager) DiagnosticDump() string {
+func (pm *PluginManager) DiagnosticDump(dump_base_dir string) string {
 	// TODO: make this configurable
-	dump_base_dir := "/tmp/eos-diagnostics"
-	dump_dir_name := fmt.Sprintf("%s/dump-%s", dump_base_dir, time.Now().Format("20060102T150405"))
+	dump_dir_name := fmt.Sprintf("%s/dumps/dump-%s", dump_base_dir, time.Now().Format("20060102T150405"))
 	err := os.MkdirAll(dump_dir_name, 0755)
 	if err != nil {
 		logger.Logger.Error("Error creating dump directory", "error", err)

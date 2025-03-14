@@ -9,8 +9,10 @@ import (
 )
 
 type ServerConfig struct {
-	Address     string `json:"host"`
-	AdminSocket string `json:"admin_socket"`
+	Address       string `json:"host"`
+	AdminSocket   string `json:"admin_socket"`
+	DiagnosticDir string `json:"diagnostic_dir"`
+	LogLevel      string `json:"log_level"`
 }
 
 type NatsConfig struct {
@@ -25,14 +27,21 @@ type Config struct {
 
 var defaultConfig Config = Config{
 	Server: ServerConfig{
-		Address:     ":9999",
-		AdminSocket: "/var/run/argeos.asok",
+		Address:       ":9999",
+		AdminSocket:   "/var/run/argeos.asok",
+		DiagnosticDir: "/var/lib/argeos/diagnostics",
 	},
 }
 
 func overrideDefaults(config *Config) {
 	if config.Server.Address == "" {
 		config.Server.Address = defaultConfig.Server.Address
+	}
+	if config.Server.AdminSocket == "" {
+		config.Server.AdminSocket = defaultConfig.Server.AdminSocket
+	}
+	if config.Server.DiagnosticDir == "" {
+		config.Server.DiagnosticDir = defaultConfig.Server.DiagnosticDir
 	}
 }
 
@@ -45,6 +54,9 @@ func Configure(jsonString []byte) Config {
 		return defaultConfig
 	}
 	overrideDefaults(&config)
+	if config.Server.LogLevel != "" {
+		logger.SetLogLevelfromString(config.Server.LogLevel)
+	}
 	return config
 }
 
