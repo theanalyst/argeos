@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"gitlab.cern.ch/eos/argeos/config"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
@@ -47,25 +48,36 @@ func (p *ProbePlugin) CommandHelp() map[string]string {
 
 func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
 	if store == nil {
+		logger.Logger.Error("No Probe store, not running Probe")
 		return plugin.HealthERROR("No Probe store")
 	}
 
-	lis, err := store.Listener(probe.WithName("argeos"))
+	logger.Logger.Info("Running Probe plugin")
+	//lis, err := store.Listener(probe.WithName("argeos"))
+	//if err != nil {
+	//	logger.Logger.Error("Error creating listener", "error", err)
+	//		return plugin.HealthERROR(err.Error())
+	//	}
+	targets, err := store.ListTargets()
 	if err != nil {
 		return plugin.HealthERROR(err.Error())
 	}
 
-	for target := range lis.Updates() {
-		if strings.Contains(hostname, target.Target) {
-			info, err := store.GetProbeInfo(hostname)
+	for _, target := range targets {
+		// TODO: This should consume lis.Updates() in future
+
+		if strings.Contains(hostname, target) {
+			info, err := store.GetProbeInfo(target)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
+				continue
 			}
+			logger.Logger.Debug("Checking probe info automatically", "info", info)
 			if info.Available {
-				logger.Logger.Info(target.Target + " is working")
+				logger.Logger.Info(target + " is working")
 			} else {
-				logger.Logger.Warn(target.Target + " is not working")
-				cmd := exec.Command("ping", "-c", "4", target.Target)
+				logger.Logger.Warn(target + " is not working")
+				cmd := exec.Command("ping", "-c", "4", target)
 				// Get the command output
 				output, err := cmd.CombinedOutput()
 				if err != nil {
@@ -77,6 +89,18 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) p
 		}
 	}
 	return plugin.HealthOK("OK")
+}
+
+// TODO: Make Probe a standalone component instead of a plugin
+func (p *ProbePlugin) StartProbe() {
+	store, _ := probe.NewStore(p.cfg.Nats.Servers)
+	hostname, _ := os.Hostname() // can be any MGM hostname like: eosalice-ns-ip700, eosatlas-ns-ip700
+	go func() {
+		for {
+			p.GetAutomaticUpdates(store, hostname)
+			time.Sleep(5 * time.Second)
+		}
+	}()
 }
 
 func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
@@ -94,6 +118,7 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 			info, err := store.GetProbeInfo(target)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
+				return plugin.HealthERROR(err.Error())
 			}
 			if info.Available {
 				logger.Logger.Info(target + " is working")
