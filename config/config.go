@@ -12,6 +12,7 @@ type ServerConfig struct {
 	Address       string `json:"host"`
 	AdminSocket   string `json:"admin_socket"`
 	DiagnosticDir string `json:"diagnostic_dir"`
+	LogLevel      string `json:"log_level"`
 }
 
 type NatsConfig struct {
@@ -53,6 +54,9 @@ func Configure(jsonString []byte) Config {
 		return defaultConfig
 	}
 	overrideDefaults(&config)
+	if config.Server.LogLevel != "" {
+		logger.SetLogLevelfromString(config.Server.LogLevel)
+	}
 	return config
 }
 
