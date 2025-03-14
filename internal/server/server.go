@@ -166,6 +166,15 @@ func (srv *Server) Start() {
 	logger.Logger.Info("Server shutdown complete!")
 }
 
+func (srv *Server) setLogLevel(args ...string) string {
+	if len(args) == 0 {
+		return "No log level provided, use debug <level>"
+	}
+	logger.SetLogLevelfromString(args[0])
+	return "Log level set to " + args[0]
+
+}
+
 func (srv *Server) handleCommand(command string, args ...string) string {
 	switch command {
 	case "healthcheck":
@@ -174,6 +183,8 @@ func (srv *Server) handleCommand(command string, args ...string) string {
 		return srv.PluginMgr.SupportedCommands()
 	case "diagnostic_dump":
 		return srv.PluginMgr.DiagnosticDump(srv.Cfg.DiagnosticDir)
+	case "debug":
+		return srv.setLogLevel(args...)
 	default:
 		return srv.PluginMgr.ExecuteCommand(command, args...)
 	}
