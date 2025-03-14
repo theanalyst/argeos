@@ -1,19 +1,25 @@
----
+image: golang:1.22
+
+stages:
+  - build
+  - release
+
 variables:
-  KOJI_TAG: 'eosops'
-  BUILD_9al: 'True'
-  AUTOTAG_QA: 'True'
+  GOOS: linux
+  CGO_ENABLED: 0
 
-include: 'https://gitlab.cern.ch/linuxsupport/rpmci/raw/master/rpm-ci.yml'
-
-# https://gitlab.cern.ch/linuxsupport/rpmci#building-go-packages-that-have-external-dependencies
-# The builders don't have internet access, so the build script was adapted
-# to fetch the dependencies from the vendor folder
-.rpm_deps:
-  before_script:
-    - rpmci_install_builddeps
-    - go mod vendor
-  cache:
+build_binaries:
+  stage: build
+  script:
+    - make
+  artifacts:
     paths:
-      - vendor
+      - argeos
 
+release:
+  stage: release
+  script:
+    - |
+      curl --header "Content-Type: application/octet-stream"  --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ./cephs3usage_amd64 "$CI_API_V4_URL/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG/packages/amd64/argeos_amd64"
+  only:
+    - tags
