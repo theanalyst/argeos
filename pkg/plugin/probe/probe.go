@@ -53,19 +53,14 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) p
 	}
 
 	logger.Logger.Info("Running Probe plugin")
-	//lis, err := store.Listener(probe.WithName("argeos"))
-	//if err != nil {
-	//	logger.Logger.Error("Error creating listener", "error", err)
-	//		return plugin.HealthERROR(err.Error())
-	//	}
-	targets, err := store.ListTargets()
+	lis, err := store.Listener(probe.WithName("argeos"))
 	if err != nil {
+		logger.Logger.Error("Error creating listener", "error", err)
 		return plugin.HealthERROR(err.Error())
 	}
 
-	for _, target := range targets {
-		// TODO: This should consume lis.Updates() in future
-
+	for _target := range lis.Updates() {
+		target := _target.Target
 		if strings.Contains(hostname, target) {
 			info, err := store.GetProbeInfo(target)
 			if err != nil {
@@ -120,6 +115,44 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 				logger.Logger.Error("Error running healthcheck", "error", err)
 				return plugin.HealthERROR(err.Error())
 			}
+			if info.Available {
+				logger.Logger.Info(target + " is working")
+			} else {
+				logger.Logger.Warn(target + " is not working")
+				cmd := exec.Command("ping", "-c", "4", target)
+				// Get the command output
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					logger.Logger.Error("Error running ping", "error", err)
+
+				}
+				logger.Logger.Warn(string(output))
+			}
+		}
+	}
+	return plugin.HealthOK("OK")
+}
+
+func (p *ProbePlugin) PollforUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+	if store == nil {
+		logger.Logger.Error("No Probe store, not running Probe")
+		return plugin.HealthERROR("No Probe store")
+	}
+
+	logger.Logger.Info("Polling for updates")
+	targets, err := store.ListTargets()
+	if err != nil {
+		return plugin.HealthERROR(err.Error())
+	}
+
+	for _, target := range targets {
+		if strings.Contains(hostname, target) {
+			info, err := store.GetProbeInfo(target)
+			if err != nil {
+				logger.Logger.Error("Error running healthcheck", "error", err)
+				continue
+			}
+			logger.Logger.Debug("Checking probe info automatically", "info", info)
 			if info.Available {
 				logger.Logger.Info(target + " is working")
 			} else {
