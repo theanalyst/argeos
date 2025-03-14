@@ -1,0 +1,19 @@
+---
+variables:
+  KOJI_TAG: 'eosops'
+  BUILD_9al: 'True'
+  AUTOTAG_QA: 'True'
+
+include: 'https://gitlab.cern.ch/linuxsupport/rpmci/raw/master/rpm-ci.yml'
+
+# https://gitlab.cern.ch/linuxsupport/rpmci#building-go-packages-that-have-external-dependencies
+# The builders don't have internet access, so the build script was adapted
+# to fetch the dependencies from the vendor folder
+.rpm_deps:
+  before_script:
+    - rpmci_install_builddeps
+    - go mod vendor
+  cache:
+    paths:
+      - vendor
+
