@@ -34,6 +34,6 @@ func main() {
 	bashplugin := bash.NewPlugin(config)
 	pluginmgr.Register(bashplugin)
 
-	server := server.Server{Cfg: config.Server, PluginMgr: pluginmgr}
+	server := server.NewServer(config.Server, pluginmgr)
 	server.Start()
 }

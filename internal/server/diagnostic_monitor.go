@@ -34,6 +34,7 @@ func (dm *DiagnosticMonitor) RegisterMonitoringPlugin(plugin common.HealthDaemon
 }
 
 func (dm *DiagnosticMonitor) StartTicker(ctx context.Context) {
+	logger.Logger.Info("Starting Diagnostic Monitor ticker")
 	ticker := time.NewTicker(dm.interval)
 	defer ticker.Stop()
 	for {
@@ -89,5 +90,5 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 		}
 	}()
 
-	dm.StartTicker(ctx)
+	go dm.StartTicker(ctx)
 }

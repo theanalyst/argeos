@@ -17,8 +17,17 @@ import (
 )
 
 type Server struct {
-	Cfg       config.ServerConfig
-	PluginMgr *plugin.PluginManager
+	Cfg               config.ServerConfig
+	PluginMgr         *plugin.PluginManager
+	DiagnosticMonitor *DiagnosticMonitor
+}
+
+func NewServer(cfg config.ServerConfig, pluginMgr *plugin.PluginManager) *Server {
+	return &Server{
+		Cfg:               cfg,
+		PluginMgr:         pluginMgr,
+		DiagnosticMonitor: NewDiagnosticMonitor(cfg, pluginMgr),
+	}
 }
 
 func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
@@ -155,6 +164,12 @@ func (srv *Server) StartUnixServer(wg *sync.WaitGroup) {
 
 func (srv *Server) Start() {
 	var wg sync.WaitGroup
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wg.Add(1)
+	go srv.DiagnosticMonitor.Start(&wg, ctx)
 
 	wg.Add(1)
 	go srv.StartUnixServer(&wg)
