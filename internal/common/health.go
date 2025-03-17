@@ -1,5 +1,9 @@
 package common
 
+import (
+	"context"
+)
+
 type HealthState int
 
 const (
@@ -24,7 +28,7 @@ func HealthStateString(state HealthState) string {
 type HealthStatus struct {
 	State       HealthState `json:"state"`
 	StateString string      `json:"state_string"`
-	Name        string      `json:"plugin_name"`
+	Name        string      `json:"component"`
 	Detail      string      `json:"detail"`
 }
 
@@ -40,4 +44,15 @@ func HealthWARN(status string) HealthStatus {
 
 func HealthERROR(status string) HealthStatus {
 	return HealthStatus{State: StateERROR, StateString: HealthStateString(StateERROR), Detail: status}
+}
+
+func (status *HealthStatus) WithComponent(name string) HealthStatus {
+	status.Name = name
+	return *status
+}
+
+type HealthDaemon interface {
+	Name() string
+	Start(ctx context.Context, updateChannel chan<- HealthStatus) error
+	Stop()
 }

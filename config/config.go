@@ -17,6 +17,7 @@ type ServerConfig struct {
 
 type NatsConfig struct {
 	Servers list.StringList `json:"servers"`
+	Target  string          `json:"target"`
 }
 
 type Config struct {

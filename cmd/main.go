@@ -30,9 +30,6 @@ func main() {
 
 	probeplugin := probe.NewPlugin(config)
 	pluginmgr.Register(probeplugin)
-	if probepluginInst, ok := probeplugin.(*probe.ProbePlugin); ok {
-		probepluginInst.StartProbe()
-	}
 
 	bashplugin := bash.NewPlugin(config)
 	pluginmgr.Register(bashplugin)

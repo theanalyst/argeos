@@ -1,11 +1,11 @@
 package probe
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	"gitlab.cern.ch/eos/argeos/config"
 	"gitlab.cern.ch/eos/argeos/internal/common"
@@ -17,27 +17,31 @@ import (
 type ProbePlugin struct {
 	name        string
 	commandHelp map[string]string
-	cfg         config.Config
+	nats_cfg    config.NatsConfig
 }
 
 func NewPlugin(config config.Config) plugin.Plugin {
+	nats_cfg := config.Nats
+	if nats_cfg.Target == "" {
+		nats_cfg.Target, _ = os.Hostname()
+	}
 	return &ProbePlugin{
 		name: "probe",
 		commandHelp: map[string]string{
 			"check_probe": "Check Probe Status",
 		},
-		cfg: config,
+		nats_cfg: config.Nats,
 	}
 }
 
 func (p *ProbePlugin) Name() string {
-	return "eosmon"
+	return p.name
 }
 
 func (p *ProbePlugin) HealthCheck() common.HealthStatus {
 	logger.Logger.Debug("Running Probe plugin")
 
-	store, _ := probe.NewStore(p.cfg.Nats.Servers)
+	store, _ := probe.NewStore(p.nats_cfg.Servers)
 	hostname, _ := os.Hostname() // can be any MGM hostname like: eosalice-ns-ip700, eosatlas-ns-ip700
 
 	return p.GetManualUpdates(store, hostname)
@@ -87,16 +91,67 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) c
 	return common.HealthOK("OK")
 }
 
-// TODO: Make Probe a standalone component instead of a plugin
-func (p *ProbePlugin) StartProbe() {
-	store, _ := probe.NewStore(p.cfg.Nats.Servers)
-	hostname, _ := os.Hostname() // can be any MGM hostname like: eosalice-ns-ip700, eosatlas-ns-ip700
+func (p *ProbePlugin) isTarget(target string) bool {
+	return strings.Contains(p.nats_cfg.Target, target)
+}
+
+func probeHealthStatus(info *probe.ProbeInfo) common.HealthStatus {
+	if info.Available {
+		status, err := info.AvailabilityInfo()
+		if err != nil {
+			return common.HealthWARN(err.Error())
+		}
+
+		return common.HealthOK(status)
+	}
+	status, err := info.ErrorDescription()
+	if err != nil {
+		logger.Logger.Error("Error getting availability status", "error", err)
+		return common.HealthERROR(err.Error())
+	}
+	return common.HealthERROR(status)
+}
+
+func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.HealthStatus) error {
+	store, err := probe.NewStore(p.nats_cfg.Servers)
+	if err != nil {
+		logger.Logger.Error("Error creating store", "error", err)
+		return err
+	}
+
+	logger.Logger.Info("Starting Probe plugin")
+	listener, err := store.Listener(probe.WithName("argeos"))
+	if err != nil {
+		logger.Logger.Error("Error creating listener", "error", err)
+		return err
+	}
+
 	go func() {
+		defer listener.Close()
 		for {
-			p.GetAutomaticUpdates(store, hostname)
-			time.Sleep(5 * time.Second)
+			select {
+			case <-ctx.Done():
+				logger.Logger.Info("Stopping Probe plugin")
+				return
+			case _target := <-listener.Updates():
+				target := _target.Target
+
+				if p.isTarget(target) {
+					info, err := store.GetProbeInfo(target)
+					if err != nil {
+						logger.Logger.Error("Error running healthcheck", "error", err)
+					}
+					updateChannel <- probeHealthStatus(info)
+				}
+				logger.Logger.Debug("Probe status", "status")
+			}
 		}
 	}()
+
+	<-ctx.Done()
+	logger.Logger.Info("Probe plugin stopped")
+	return nil
+
 }
 
 func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) common.HealthStatus {
@@ -116,44 +171,6 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) comm
 				logger.Logger.Error("Error running healthcheck", "error", err)
 				return common.HealthERROR(err.Error())
 			}
-			if info.Available {
-				logger.Logger.Info(target + " is working")
-			} else {
-				logger.Logger.Warn(target + " is not working")
-				cmd := exec.Command("ping", "-c", "4", target)
-				// Get the command output
-				output, err := cmd.CombinedOutput()
-				if err != nil {
-					logger.Logger.Error("Error running ping", "error", err)
-
-				}
-				logger.Logger.Warn(string(output))
-			}
-		}
-	}
-	return common.HealthOK("OK")
-}
-
-func (p *ProbePlugin) PollforUpdates(store *probe.Store, hostname string) common.HealthStatus {
-	if store == nil {
-		logger.Logger.Error("No Probe store, not running Probe")
-		return common.HealthERROR("No Probe store")
-	}
-
-	logger.Logger.Info("Polling for updates")
-	targets, err := store.ListTargets()
-	if err != nil {
-		return common.HealthERROR(err.Error())
-	}
-
-	for _, target := range targets {
-		if strings.Contains(hostname, target) {
-			info, err := store.GetProbeInfo(target)
-			if err != nil {
-				logger.Logger.Error("Error running healthcheck", "error", err)
-				continue
-			}
-			logger.Logger.Debug("Checking probe info automatically", "info", info)
 			if info.Available {
 				logger.Logger.Info(target + " is working")
 			} else {
