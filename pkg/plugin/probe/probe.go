@@ -142,8 +142,8 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 						logger.Logger.Error("Error running healthcheck", "error", err)
 					}
 					updateChannel <- probeHealthStatus(info)
+					logger.Logger.Debug("Probe status", "status", info)
 				}
-				logger.Logger.Debug("Probe status", "status")
 			}
 		}
 	}()

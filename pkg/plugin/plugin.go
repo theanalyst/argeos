@@ -26,7 +26,7 @@ func SupportedCommands(p Plugin) []string {
 }
 
 type PluginManager struct {
-	plugins []Plugin
+	Plugins []Plugin
 }
 
 func NewManager() *PluginManager {
@@ -34,14 +34,14 @@ func NewManager() *PluginManager {
 }
 
 func (pm *PluginManager) Register(plugin Plugin) {
-	pm.plugins = append(pm.plugins, plugin)
+	pm.Plugins = append(pm.Plugins, plugin)
 }
 
 func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 
 	var result string
 
-	for _, plugin := range pm.plugins {
+	for _, plugin := range pm.Plugins {
 
 		for _, cmd := range SupportedCommands(plugin) {
 			if cmd == command {
@@ -63,7 +63,7 @@ func (pm *PluginManager) ExecuteCommand(command string, args ...string) string {
 
 func (pm *PluginManager) SupportedCommands() string {
 	commands := make([]string, 0)
-	for _, plugin := range pm.plugins {
+	for _, plugin := range pm.Plugins {
 		commands = append(commands, SupportedCommands(plugin)...)
 	}
 	bytes, err := json.Marshal(commands)
@@ -77,7 +77,7 @@ func (pm *PluginManager) HealthCheck() []common.HealthStatus {
 
 	var result []common.HealthStatus
 	logger.Logger.Info("Running healthcheck")
-	for _, plugin := range pm.plugins {
+	for _, plugin := range pm.Plugins {
 		plugin_health := plugin.HealthCheck()
 		plugin_health.Name = plugin.Name()
 		result = append(result, plugin_health)

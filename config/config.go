@@ -9,10 +9,11 @@ import (
 )
 
 type ServerConfig struct {
-	Address       string `json:"host"`
-	AdminSocket   string `json:"admin_socket"`
-	DiagnosticDir string `json:"diagnostic_dir"`
-	LogLevel      string `json:"log_level"`
+	Address            string `json:"host"`
+	AdminSocket        string `json:"admin_socket"`
+	DiagnosticDir      string `json:"diagnostic_dir"`
+	DiagnosticInterval int32  `json:"diagnostic_interval"`
+	LogLevel           string `json:"log_level"`
 }
 
 type NatsConfig struct {
@@ -28,9 +29,10 @@ type Config struct {
 
 var defaultConfig Config = Config{
 	Server: ServerConfig{
-		Address:       ":9999",
-		AdminSocket:   "/var/run/argeos.asok",
-		DiagnosticDir: "/var/lib/argeos/diagnostics",
+		Address:            ":9999",
+		AdminSocket:        "/var/run/argeos.asok",
+		DiagnosticDir:      "/var/lib/argeos/diagnostics",
+		DiagnosticInterval: 300,
 	},
 }
 
@@ -43,6 +45,9 @@ func overrideDefaults(config *Config) {
 	}
 	if config.Server.DiagnosticDir == "" {
 		config.Server.DiagnosticDir = defaultConfig.Server.DiagnosticDir
+	}
+	if config.Server.DiagnosticInterval == 0 {
+		config.Server.DiagnosticInterval = defaultConfig.Server.DiagnosticInterval
 	}
 }
 

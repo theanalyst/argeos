@@ -54,5 +54,6 @@ func (status *HealthStatus) WithComponent(name string) HealthStatus {
 type HealthDaemon interface {
 	Name() string
 	Start(ctx context.Context, updateChannel chan<- HealthStatus) error
+	HealthCheck() HealthStatus
 	Stop()
 }
