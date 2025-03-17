@@ -119,7 +119,7 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 		return err
 	}
 
-	logger.Logger.Info("Starting Probe plugin")
+	logger.Logger.Info("Starting Probe diagnostics plugin")
 	listener, err := store.Listener(probe.WithName("argeos"))
 	if err != nil {
 		logger.Logger.Error("Error creating listener", "error", err)
@@ -152,6 +152,10 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 	logger.Logger.Info("Probe plugin stopped")
 	return nil
 
+}
+
+func (p *ProbePlugin) Stop() {
+	logger.Logger.Info("Stopping Probe diagnostics plugin")
 }
 
 func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) common.HealthStatus {
