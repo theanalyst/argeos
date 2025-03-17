@@ -21,16 +21,16 @@ type ProbePlugin struct {
 }
 
 func NewPlugin(config config.Config) plugin.Plugin {
-	nats_cfg := config.Nats
-	if nats_cfg.Target == "" {
-		nats_cfg.Target, _ = os.Hostname()
+	_nats_cfg := config.Nats
+	if _nats_cfg.Target == "" {
+		_nats_cfg.Target, _ = os.Hostname()
 	}
 	return &ProbePlugin{
 		name: "probe",
 		commandHelp: map[string]string{
 			"check_probe": "Check Probe Status",
 		},
-		nats_cfg: config.Nats,
+		nats_cfg: _nats_cfg,
 	}
 }
 
