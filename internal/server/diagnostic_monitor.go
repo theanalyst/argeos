@@ -30,6 +30,7 @@ func NewDiagnosticMonitor(cfg config.ServerConfig, pluginMgr *plugin.PluginManag
 }
 
 func (dm *DiagnosticMonitor) RegisterMonitoringPlugin(plugin common.HealthDaemon) {
+	logger.Logger.Info("Registering monitoring plugin", "plugin", plugin.Name())
 	dm.monitoringPlugins = append(dm.monitoringPlugins, plugin)
 }
 
@@ -60,6 +61,8 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 	for _, plugin := range dm.PluginMgr.Plugins {
 		if mp, ok := plugin.(common.HealthDaemon); ok {
 			dm.RegisterMonitoringPlugin(mp)
+		} else {
+			logger.Logger.Debug("Plugin does not implement HealthDaemon interface", "plugin", plugin.Name())
 		}
 	}
 
