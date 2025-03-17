@@ -53,7 +53,7 @@ func (srv *Server) handleConnectionWithCtx(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (srv *Server) StartTCPServer(wg *sync.WaitGroup) {
+func (srv *Server) StartTCPServer(wg *sync.WaitGroup, ctx context.Context) {
 	defer wg.Done()
 	address := srv.Cfg.Address
 	listener, err := net.Listen("tcp", address)
@@ -63,18 +63,6 @@ func (srv *Server) StartTCPServer(wg *sync.WaitGroup) {
 	}
 
 	defer listener.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	shutdownChan := make(chan os.Signal, 1)
-	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-shutdownChan
-		logger.Logger.Info("Received Shutdown signal, stopping TCP server")
-		cancel()
-	}()
 
 	logger.Logger.Info("Starting argeos TCP daemon on ", "address", address)
 
@@ -106,7 +94,7 @@ func (srv *Server) StartTCPServer(wg *sync.WaitGroup) {
 	logger.Logger.Info("TCP Server shutdown complete!")
 }
 
-func (srv *Server) StartUnixServer(wg *sync.WaitGroup) {
+func (srv *Server) StartUnixServer(wg *sync.WaitGroup, ctx context.Context) {
 	defer wg.Done()
 	var socketPath = srv.Cfg.AdminSocket
 	listener, err := net.Listen("unix", socketPath)
@@ -126,18 +114,6 @@ func (srv *Server) StartUnixServer(wg *sync.WaitGroup) {
 		}
 	}()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	shutdownChan := make(chan os.Signal, 1)
-	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
-
-	go func() {
-		<-shutdownChan
-		logger.Logger.Info("Received Shutdown signal, stopping UDP server")
-		cancel()
-	}()
-
 	logger.Logger.Info("Starting argeos Unix socket on ", "socketPath", socketPath)
 
 	go func() {
@@ -147,6 +123,7 @@ func (srv *Server) StartUnixServer(wg *sync.WaitGroup) {
 			if err != nil {
 				select {
 				case <-ctx.Done():
+					logger.Logger.Warn("Unix Server shutting down, no longer accepting connection")
 					return
 				default:
 					logger.Logger.Error("Accepting connection", "error", err)
@@ -168,14 +145,23 @@ func (srv *Server) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	shutdownChan := make(chan os.Signal, 1)
+	signal.Notify(shutdownChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-shutdownChan
+		logger.Logger.Info("Received Shutdown signal, stopping all services!")
+		cancel()
+	}()
+
 	wg.Add(1)
 	go srv.DiagnosticMonitor.Start(&wg, ctx)
 
 	wg.Add(1)
-	go srv.StartUnixServer(&wg)
+	go srv.StartUnixServer(&wg, ctx)
 
 	wg.Add(1)
-	go srv.StartTCPServer(&wg)
+	go srv.StartTCPServer(&wg, ctx)
 
 	wg.Wait()
 	logger.Logger.Info("Server shutdown complete!")
