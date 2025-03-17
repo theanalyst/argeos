@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"gitlab.cern.ch/eos/argeos/config"
+	"gitlab.cern.ch/eos/argeos/internal/common"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
@@ -68,14 +69,14 @@ func (np *NetworkPlugin) run_ss(args string) ([]byte, error) {
 
 }
 
-func (np *NetworkPlugin) HealthCheck() plugin.HealthStatus {
+func (np *NetworkPlugin) HealthCheck() common.HealthStatus {
 	logger.Logger.Debug("Running Network plugin")
 
 	_, err := np.run_ss("")
 	if err != nil {
-		return plugin.HealthERROR(err.Error())
+		return common.HealthERROR(err.Error())
 	}
-	return plugin.HealthOK("OK")
+	return common.HealthOK("OK")
 }
 
 func (np *NetworkPlugin) CommandHelp() map[string]string {

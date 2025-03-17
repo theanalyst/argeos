@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitlab.cern.ch/eos/argeos/config"
+	"gitlab.cern.ch/eos/argeos/internal/common"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 	"gitlab.cern.ch/eos/ops/probe"
@@ -33,7 +34,7 @@ func (p *ProbePlugin) Name() string {
 	return "eosmon"
 }
 
-func (p *ProbePlugin) HealthCheck() plugin.HealthStatus {
+func (p *ProbePlugin) HealthCheck() common.HealthStatus {
 	logger.Logger.Debug("Running Probe plugin")
 
 	store, _ := probe.NewStore(p.cfg.Nats.Servers)
@@ -46,17 +47,17 @@ func (p *ProbePlugin) CommandHelp() map[string]string {
 	return p.commandHelp
 }
 
-func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) common.HealthStatus {
 	if store == nil {
 		logger.Logger.Error("No Probe store, not running Probe")
-		return plugin.HealthERROR("No Probe store")
+		return common.HealthERROR("No Probe store")
 	}
 
 	logger.Logger.Info("Running Probe plugin")
 	lis, err := store.Listener(probe.WithName("argeos"))
 	if err != nil {
 		logger.Logger.Error("Error creating listener", "error", err)
-		return plugin.HealthERROR(err.Error())
+		return common.HealthERROR(err.Error())
 	}
 
 	for _target := range lis.Updates() {
@@ -83,7 +84,7 @@ func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) p
 			}
 		}
 	}
-	return plugin.HealthOK("OK")
+	return common.HealthOK("OK")
 }
 
 // TODO: Make Probe a standalone component instead of a plugin
@@ -98,14 +99,14 @@ func (p *ProbePlugin) StartProbe() {
 	}()
 }
 
-func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) common.HealthStatus {
 	if store == nil {
-		return plugin.HealthERROR("No Probe store")
+		return common.HealthERROR("No Probe store")
 	}
 
 	targets, err := store.ListTargets()
 	if err != nil {
-		return plugin.HealthERROR(err.Error())
+		return common.HealthERROR(err.Error())
 	}
 
 	for _, target := range targets {
@@ -113,7 +114,7 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 			info, err := store.GetProbeInfo(target)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
-				return plugin.HealthERROR(err.Error())
+				return common.HealthERROR(err.Error())
 			}
 			if info.Available {
 				logger.Logger.Info(target + " is working")
@@ -130,19 +131,19 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) plug
 			}
 		}
 	}
-	return plugin.HealthOK("OK")
+	return common.HealthOK("OK")
 }
 
-func (p *ProbePlugin) PollforUpdates(store *probe.Store, hostname string) plugin.HealthStatus {
+func (p *ProbePlugin) PollforUpdates(store *probe.Store, hostname string) common.HealthStatus {
 	if store == nil {
 		logger.Logger.Error("No Probe store, not running Probe")
-		return plugin.HealthERROR("No Probe store")
+		return common.HealthERROR("No Probe store")
 	}
 
 	logger.Logger.Info("Polling for updates")
 	targets, err := store.ListTargets()
 	if err != nil {
-		return plugin.HealthERROR(err.Error())
+		return common.HealthERROR(err.Error())
 	}
 
 	for _, target := range targets {
@@ -168,7 +169,7 @@ func (p *ProbePlugin) PollforUpdates(store *probe.Store, hostname string) plugin
 			}
 		}
 	}
-	return plugin.HealthOK("OK")
+	return common.HealthOK("OK")
 }
 
 func (p *ProbePlugin) Execute(command string, args ...string) (string, error) {

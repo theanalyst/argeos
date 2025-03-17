@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"gitlab.cern.ch/eos/argeos/config"
+	"gitlab.cern.ch/eos/argeos/internal/common"
 	"gitlab.cern.ch/eos/argeos/internal/logger"
 	"gitlab.cern.ch/eos/argeos/pkg/plugin"
 )
@@ -136,18 +137,18 @@ func (bp *BashPlugin) Execute(command string, args ...string) (string, error) {
 	}
 }
 
-func (bp *BashPlugin) HealthCheck() plugin.HealthStatus {
+func (bp *BashPlugin) HealthCheck() common.HealthStatus {
 	if _, err := os.Stat(bp.config.ScriptDir); os.IsNotExist(err) {
-		return plugin.HealthERROR("Script directory does not exist")
+		return common.HealthERROR("Script directory does not exist")
 	}
 
 	filelist, err := bp.getScripts()
 
 	if err != nil {
-		return plugin.HealthERROR("Error reading script directory")
+		return common.HealthERROR("Error reading script directory")
 	}
 	if len(filelist) == 0 {
-		return plugin.HealthWARN("No scripts found in script directory")
+		return common.HealthWARN("No scripts found in script directory")
 	}
-	return plugin.HealthOK("Bash plugin is healthy")
+	return common.HealthOK("Bash plugin is healthy")
 }
