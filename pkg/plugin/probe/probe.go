@@ -169,25 +169,16 @@ func (p *ProbePlugin) GetManualUpdates(store *probe.Store, hostname string) comm
 	}
 
 	for _, target := range targets {
-		if strings.Contains(hostname, target) {
+		if p.isTarget(target) {
 			info, err := store.GetProbeInfo(target)
 			if err != nil {
 				logger.Logger.Error("Error running healthcheck", "error", err)
 				return common.HealthERROR(err.Error())
 			}
-			if info.Available {
-				logger.Logger.Info(target + " is working")
-			} else {
-				logger.Logger.Warn(target + " is not working")
-				cmd := exec.Command("ping", "-c", "4", target)
-				// Get the command output
-				output, err := cmd.CombinedOutput()
-				if err != nil {
-					logger.Logger.Error("Error running ping", "error", err)
 
-				}
-				logger.Logger.Warn(string(output))
-			}
+			healthStatus := probeHealthStatus(info)
+			logger.Logger.Debug("Got health status", "status", healthStatus)
+			return healthStatus
 		}
 	}
 	return common.HealthOK("OK")
