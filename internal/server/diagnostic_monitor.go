@@ -17,6 +17,9 @@ type DiagnosticMonitor struct {
 	interval          time.Duration
 	monitoringPlugins []common.HealthDaemon
 	healthUpdate      chan common.HealthStatus
+	consecutiveFails  int
+	backOffDuration   time.Duration
+	maxBackOff        time.Duration
 }
 
 func NewDiagnosticMonitor(cfg config.ServerConfig, pluginMgr *plugin.PluginManager) *DiagnosticMonitor {
@@ -25,7 +28,10 @@ func NewDiagnosticMonitor(cfg config.ServerConfig, pluginMgr *plugin.PluginManag
 		PluginMgr:         pluginMgr,
 		interval:          time.Duration(cfg.DiagnosticInterval) * time.Second,
 		monitoringPlugins: make([]common.HealthDaemon, 0),
-		healthUpdate:      make(chan common.HealthStatus),
+		healthUpdate:      make(chan common.HealthStatus, 100),
+		consecutiveFails:  0,
+		backOffDuration:   1 * time.Second,
+		maxBackOff:        1800 * time.Second,
 	}
 }
 
@@ -76,6 +82,9 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 	}
 
 	go func() {
+		var backoffTimer *time.Timer
+		isBackingOff := false
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -87,10 +96,36 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 			case update := <-dm.healthUpdate:
 				logger.Logger.Debug("Received health update", "plugin", update.Name, "status", update.StateString)
 				if update.State == common.StateFAIL {
-					dm.PluginMgr.DiagnosticDump(dm.Cfg.DiagnosticDir)
+					dm.consecutiveFails++
+					if !isBackingOff {
+						isBackingOff = true
+						delay := min(dm.backOffDuration*time.Duration(dm.consecutiveFails), dm.maxBackOff)
+						backoffTimer = time.NewTimer(delay)
+						logger.Logger.Warn("Health check failed", "plugin", update.Name, "consecutiveFails", dm.consecutiveFails, "backoff", delay)
+					}
+				} else if update.State == common.StateOK {
+					dm.consecutiveFails = 0
+					isBackingOff = false
+					if backoffTimer != nil && !backoffTimer.Stop() {
+						<-backoffTimer.C // Drain the channel
+					}
+					backoffTimer = nil
 				}
-			}
-		}
+			case <-func() <-chan time.Time {
+				if backoffTimer != nil {
+					return backoffTimer.C
+				}
+				return nil
+			}():
+				if isBackingOff {
+					logger.Logger.Info("Dumping diagnostics after backoff", "consecutiveFails", dm.consecutiveFails)
+					dm.PluginMgr.DiagnosticDump(dm.Cfg.DiagnosticDir)
+					dm.backOffDuration = min(dm.backOffDuration*2, dm.maxBackOff)
+					isBackingOff = false
+					backoffTimer = nil
+				} // isBackingOff
+			} // select
+		} // for
 	}()
 
 	go dm.StartTicker(ctx)
