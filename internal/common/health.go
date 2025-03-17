@@ -9,7 +9,8 @@ type HealthState int
 const (
 	StateOK HealthState = iota
 	StateWARN
-	StateERROR
+	StateFAIL  // Use this for Failing server component
+	StateERROR // Use for failure in plugin execution, or other errors but not for health failure
 )
 
 func HealthStateString(state HealthState) string {
@@ -20,6 +21,8 @@ func HealthStateString(state HealthState) string {
 		return "WARN"
 	case StateERROR:
 		return "ERROR"
+	case StateFAIL:
+		return "FAIL"
 	default:
 		return "UNKNOWN"
 	}
@@ -46,9 +49,13 @@ func HealthERROR(status string) HealthStatus {
 	return HealthStatus{State: StateERROR, StateString: HealthStateString(StateERROR), Detail: status}
 }
 
-func (status *HealthStatus) WithComponent(name string) HealthStatus {
+func HealthFAIL(status string) HealthStatus {
+	return HealthStatus{State: StateFAIL, StateString: HealthStateString(StateFAIL), Detail: status}
+}
+
+func (status HealthStatus) WithComponent(name string) HealthStatus {
 	status.Name = name
-	return *status
+	return status
 }
 
 type HealthDaemon interface {

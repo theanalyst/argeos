@@ -86,7 +86,7 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 				return
 			case update := <-dm.healthUpdate:
 				logger.Logger.Debug("Received health update", "plugin", update.Name, "status", update.StateString)
-				if update.State != common.StateOK {
+				if update.State == common.StateFAIL {
 					dm.PluginMgr.DiagnosticDump(dm.Cfg.DiagnosticDir)
 				}
 			}

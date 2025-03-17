@@ -44,7 +44,7 @@ func (p *ProbePlugin) HealthCheck() common.HealthStatus {
 	store, _ := probe.NewStore(p.nats_cfg.Servers)
 	hostname, _ := os.Hostname() // can be any MGM hostname like: eosalice-ns-ip700, eosatlas-ns-ip700
 
-	return p.GetManualUpdates(store, hostname)
+	return p.GetManualUpdates(store, hostname).WithComponent(p.Name())
 }
 
 func (p *ProbePlugin) CommandHelp() map[string]string {
@@ -107,9 +107,9 @@ func probeHealthStatus(info *probe.ProbeInfo) common.HealthStatus {
 	status, err := info.ErrorDescription()
 	if err != nil {
 		logger.Logger.Error("Error getting availability status", "error", err)
-		return common.HealthERROR(err.Error())
+		return common.HealthFAIL(err.Error())
 	}
-	return common.HealthERROR(status)
+	return common.HealthFAIL(status)
 }
 
 func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.HealthStatus) error {
@@ -140,6 +140,7 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 					info, err := store.GetProbeInfo(target)
 					if err != nil {
 						logger.Logger.Error("Error running healthcheck", "error", err)
+						continue
 					}
 					updateChannel <- probeHealthStatus(info)
 					logger.Logger.Debug("Probe status", "status", info)
