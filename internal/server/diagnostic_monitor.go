@@ -111,6 +111,7 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 					}
 					backoffTimer = nil
 				}
+				// ensure that we don't evaluate a nil backoffTimer
 			case <-func() <-chan time.Time {
 				if backoffTimer != nil {
 					return backoffTimer.C
