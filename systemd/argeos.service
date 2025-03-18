@@ -1,0 +1,12 @@
+[Unit]
+Description=Argeos daemon for diagnosing processes
+After=network.target
+
+[Service]
+ExecStart=/path/to/your/binary/directory/mybin -c /etc/argeos/config.json
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

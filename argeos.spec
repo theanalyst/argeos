@@ -7,7 +7,8 @@ Summary: The CERN
 Group: CERN-IT/SD
 License: AGPLv3
 ExclusiveArch: x86_64
-Source: %{name}-%{version}.tar.gz
+Source0: %{name}-%{version}.tar.gz
+Source1: systemd/argeos.service
 
 BuildRequires: go-toolset, systemd
 
@@ -29,7 +30,7 @@ install -d %{buildroot}%{_bindir}
 install -d %{buildroot}%{_sysconfdir}/%{name}
 install -m 755 %{name}            %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}/%{_unitdir}
-install -m 644 snowplow.service %{buildroot}/%{_unitdir}/snowplow@.service
+install -D -m 0644 %{SOURCE1} %{buildroot}/%{_unitdir}/argeos.service
 
 %clean
 rm -rf %{buildroot}
