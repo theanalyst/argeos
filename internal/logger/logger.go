@@ -1,8 +1,10 @@
 package logger
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,18 +31,34 @@ func SetLogLevelfromString(level string) {
 	}
 }
 
+func makeStdErrHandler(logopts *slog.HandlerOptions) slog.Handler {
+	return slog.NewTextHandler(os.Stderr, logopts)
+}
+
 func Init(logFile string) {
 	gLogLevel.Set(slog.LevelInfo)
 	logopts := slog.HandlerOptions{Level: &gLogLevel}
 	var handler slog.Handler
 	if logFile != "" {
+		err := os.MkdirAll(filepath.Dir(logFile), 0755)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating log directory: %s", err)
+			handler = makeStdErrHandler(&logopts)
+			Logger = slog.New(handler)
+			return
+		}
+
 		f, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			handler = slog.NewTextHandler(os.Stderr, &logopts)
+			fmt.Fprintf(os.Stderr, "Error opening log file: %s", err)
+			handler = makeStdErrHandler(&logopts)
+			Logger = slog.New(handler)
+			return
 		}
+
 		handler = slog.NewTextHandler(f, &logopts)
 	} else {
-		handler = slog.NewTextHandler(os.Stderr, &logopts)
+		handler = makeStdErrHandler(&logopts)
 	}
 	Logger = slog.New(handler)
 }

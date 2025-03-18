@@ -8,12 +8,15 @@ import (
 	list "gitlab.cern.ch/eos/argeos/internal/utils"
 )
 
+var CmdLogFile string
+
 type ServerConfig struct {
 	Address            string `json:"host"`
 	AdminSocket        string `json:"admin_socket"`
 	DiagnosticDir      string `json:"diagnostic_dir"`
 	DiagnosticInterval int32  `json:"diagnostic_interval"`
 	LogLevel           string `json:"log_level"`
+	LogFile            string `json:"log_file"`
 }
 
 type NatsConfig struct {
@@ -33,6 +36,7 @@ var defaultConfig Config = Config{
 		AdminSocket:        "/var/run/argeos.asok",
 		DiagnosticDir:      "/var/lib/argeos/diagnostics",
 		DiagnosticInterval: 300,
+		LogFile:            "/var/log/argeos/argeos.log",
 	},
 }
 
@@ -60,6 +64,9 @@ func Configure(jsonString []byte) Config {
 		return defaultConfig
 	}
 	overrideDefaults(&config)
+	if CmdLogFile == "" && config.Server.LogFile != "" {
+		logger.Init(config.Server.LogFile)
+	}
 	if config.Server.LogLevel != "" {
 		logger.SetLogLevelfromString(config.Server.LogLevel)
 	}

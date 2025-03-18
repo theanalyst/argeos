@@ -15,13 +15,12 @@ import (
 func main() {
 
 	var configpath string
-	var logfile string
 	flag.StringVar(&configpath, "c", "/etc/argeos.config.json",
 		"Path to config file [/etc/argeos.config.json]")
-	flag.StringVar(&logfile, "logfile", "", "Path to log file")
+	flag.StringVar(&config.CmdLogFile, "logfile", "", "Path to log file")
 	flag.Parse()
 
-	logger.Init(logfile)
+	logger.Init(config.CmdLogFile)
 	config := config.ConfigurefromFile(configpath)
 
 	pluginmgr := plugin.NewManager()
