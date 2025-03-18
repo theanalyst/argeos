@@ -1,6 +1,7 @@
 Name: argeos
 Version: 0.0.1 
-Release: 1%{?dist} # this is what comes after '-' in v0.0.1-{Release}
+# this is what comes after '-' in v0.0.1-{Release}
+Release: 1%{?dist} 
 Summary: The CERN 
 
 Group: CERN-IT/SD
