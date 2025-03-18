@@ -11,9 +11,9 @@ Source: %{name}-%{version}.tar.gz
 BuildRequires: go-toolset, systemd
 
 %description
-Automatic Tasks
-- Once the instance is declared unavable by the sls probe, it will dump statistics
-- other plugins and suits of applications
+Tasks
+- Takes the status of the hostname from the PROBE and if down, will take diagnostics
+- Is able to be remotely controlled to create the diagnostics reports
 
 # do not strip the binary
 %define __os_install_post %{nil}
@@ -41,5 +41,5 @@ rm -f %{name}/%{name}
 
 
 %changelog
-* Fri Mar 14 2025 Abhishek Lekshmanan  <abhishek.lekshmanan@cern.ch> 0.0.1-1
+* Tue Mar 18 2025 Abhishek Lekshmanan  <abhishek.lekshmanan@cern.ch> 0.0.1-1
 - Making the application alive
