@@ -104,6 +104,7 @@ func (dm *DiagnosticMonitor) Start(wg *sync.WaitGroup, ctx context.Context) {
 						logger.Logger.Warn("Health check failed", "plugin", update.Name, "consecutiveFails", dm.consecutiveFails, "backoff", delay)
 					}
 				} else if update.State == common.StateOK {
+					logger.Logger.Debug("Health check OK", "plugin", update.Name)
 					dm.consecutiveFails = 0
 					isBackingOff = false
 					if backoffTimer != nil && !backoffTimer.Stop() {

@@ -135,6 +135,7 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 				return
 			case _target := <-listener.Updates():
 				target := _target.Target
+				logger.Logger.Debug("AutoListener: Got target update", "target", target)
 
 				if p.isTarget(target) {
 					info, err := store.GetProbeInfo(target)
@@ -142,6 +143,7 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 						logger.Logger.Error("Error running healthcheck", "error", err)
 						continue
 					}
+					logger.Logger.Debug("AutoListener: pushing health status to channel", "status", info)
 					updateChannel <- probeHealthStatus(info)
 					logger.Logger.Debug("Probe status", "status", info)
 				}
