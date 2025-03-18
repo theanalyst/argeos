@@ -7,14 +7,13 @@ Summary: The CERN
 Group: CERN-IT/SD
 License: AGPLv3
 ExclusiveArch: x86_64
-Source0: %{name}-%{version}.tar.gz
-Source1: systemd/argeos.service
+Source: %{name}-%{version}.tar.gz
 
 BuildRequires: go-toolset, systemd
 
 %description
-Tasks
-- Takes the status of the hostname from the PROBE and if down, will take diagnostics
+Simple binary that actuates running diagnostics for stuck processes
+- Parses EOS instance state from probe and takes diagnostic dumps
 - Is able to be remotely controlled to create the diagnostics reports
 
 # do not strip the binary
@@ -30,7 +29,8 @@ install -d %{buildroot}%{_bindir}
 install -d %{buildroot}%{_sysconfdir}/%{name}
 install -m 755 %{name}            %{buildroot}%{_bindir}/
 mkdir -p %{buildroot}/%{_unitdir}
-install -D -m 0644 %{SOURCE1} %{buildroot}/%{_unitdir}/argeos.service
+install -m 644 argeos.service %{buildroot}/%{_unitdir}/argeos.service
+# install -D -m 0644 %{SOURCE1} %{buildroot}/%{_unitdir}/argeos.service
 
 %clean
 rm -rf %{buildroot}

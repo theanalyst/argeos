@@ -1,5 +1,6 @@
 NAME = argeos
-SPECFILE = $(shell find . -type f -name '*.spec')
+FILES_TO_RPM = argeos systemd/argeos.service
+SPECFILE = argeos.spec
 PACKAGE  = $(shell awk '$$1 == "Name:"     { print $$2 }' $(SPECFILE) )
 VERSION  = $(shell awk '$$1 == "Version:"  { print $$2 }' $(SPECFILE) )
 RELEASE  = $(shell awk '$$1 == "Release:"  { print $$2 }' $(SPECFILE) )
