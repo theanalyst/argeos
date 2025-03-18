@@ -39,7 +39,7 @@ rm -f %{name}/%{name}
 %files
 %defattr(-,root,root,-)
 %{_bindir}/%{name}
-/%{_unitdir}/snowplow@.service
+/%{_unitdir}/argeos.service
 
 
 %changelog
