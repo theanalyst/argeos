@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"gitlab.cern.ch/eos/argeos/config"
@@ -49,46 +48,6 @@ func (p *ProbePlugin) HealthCheck() common.HealthStatus {
 
 func (p *ProbePlugin) CommandHelp() map[string]string {
 	return p.commandHelp
-}
-
-func (p *ProbePlugin) GetAutomaticUpdates(store *probe.Store, hostname string) common.HealthStatus {
-	if store == nil {
-		logger.Logger.Error("No Probe store, not running Probe")
-		return common.HealthERROR("No Probe store")
-	}
-
-	logger.Logger.Info("Running Probe plugin")
-	lis, err := store.Listener(probe.WithName("argeos"))
-	if err != nil {
-		logger.Logger.Error("Error creating listener", "error", err)
-		return common.HealthERROR(err.Error())
-	}
-
-	for _target := range lis.Updates() {
-		target := _target.Target
-		if strings.Contains(hostname, target) {
-			info, err := store.GetProbeInfo(target)
-			if err != nil {
-				logger.Logger.Error("Error running healthcheck", "error", err)
-				continue
-			}
-			logger.Logger.Debug("Checking probe info automatically", "info", info)
-			if info.Available {
-				logger.Logger.Info(target + " is working")
-			} else {
-				logger.Logger.Warn(target + " is not working")
-				cmd := exec.Command("ping", "-c", "4", target)
-				// Get the command output
-				output, err := cmd.CombinedOutput()
-				if err != nil {
-					logger.Logger.Error("Error running ping", "error", err)
-
-				}
-				logger.Logger.Warn(string(output))
-			}
-		}
-	}
-	return common.HealthOK("OK")
 }
 
 func (p *ProbePlugin) isTarget(target string) bool {
