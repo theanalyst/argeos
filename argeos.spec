@@ -2,7 +2,7 @@ Name: argeos
 Version: 0.0.2
 # this is what comes after '-' in v0.0.1-{Release}
 Release: 1%{?dist} 
-Summary: The CERN 
+Summary: Simple health monitor and diagnostic info collector for eos
 
 Group: CERN-IT/SD
 License: AGPLv3
