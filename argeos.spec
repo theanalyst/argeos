@@ -1,5 +1,5 @@
 Name: argeos
-Version: 0.0.1 
+Version: 0.0.2
 # this is what comes after '-' in v0.0.1-{Release}
 Release: 1%{?dist} 
 Summary: The CERN 
@@ -43,5 +43,9 @@ rm -f %{name}/%{name}
 
 
 %changelog
+* Wed Mar 19 2025 Abhishek Lekshmanan <abhishek.lekshmanan@cern.ch> 0.0.2-1
+- Use unique names for listeners, drop dead code
+- Add debug logging for automatic listener updates
+
 * Tue Mar 18 2025 Abhishek Lekshmanan  <abhishek.lekshmanan@cern.ch> 0.0.1-1
 - Making the application alive
