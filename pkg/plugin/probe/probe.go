@@ -119,13 +119,16 @@ func (p *ProbePlugin) Start(ctx context.Context, updateChannel chan<- common.Hea
 		return err
 	}
 
+	listener_name := "argeos_diagnostic"
 	logger.Logger.Info("Starting Probe diagnostics plugin")
-	listener, err := store.Listener(probe.WithName("argeos"))
+	listener, err := store.Listener(probe.WithName(listener_name))
+
 	if err != nil {
 		logger.Logger.Error("Error creating listener", "error", err)
 		return err
 	}
 
+	logger.Logger.Info("Started listener for updates with", "name", listener_name)
 	go func() {
 		defer listener.Close()
 		for {
